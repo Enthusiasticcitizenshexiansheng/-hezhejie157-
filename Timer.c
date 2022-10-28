@@ -154,12 +154,12 @@ void Tim3Init(void)
 
 //-----------------
 
- void  Tim4GpioInit(void);
+ void   Tim4GpioInit(void);
  void 	Tim4ModeInit(void);
  void 	Tim4NvicInit(void);
+ void   Time4Init(void);
 
-
-void Time4Init(void)
+void Tim4Init(void)
 {
   Tim4GpioInit();
 	Tim4ModeInit();
@@ -216,7 +216,8 @@ void 	Tim4ModeInit(void)
 	TIM_ICInitStruct.TIM_Channel=  TIM_Channel_1;
 //直通  
 	TIM_ICInitStruct.TIM_ICSelection=TIM_ICSelection_DirectTI;
-  TIM_ICInitStruct.TIM_ICPrescaler=TIM_ICPSC_DIV1;
+  //有四次上升沿才继续
+	TIM_ICInitStruct.TIM_ICPrescaler=TIM_ICPSC_DIV4;
 	//滤波 几次
   TIM_ICInitStruct.TIM_ICFilter=0x00;
 	//上升沿
@@ -243,23 +244,60 @@ void 	Tim4NvicInit(void)
 }
 
 
+
+
+//p13-3
+WaveCapture waveCapture={RESET,0,0,0,0};
+
+
+
 //中断回调函数
 void TIM4_IRQHandler(void)
-{
-if(TIM_GetITStatus(TIM4,TIM_IT_Update)!=RESET)
+{ 
+	if(waveCapture.ucFinishFlag==0)
+	{
+	                 //更新中断
+  if(TIM_GetITStatus(TIM4,TIM_IT_Update)!=RESET)
 {
 
 	//用户代码
+	if(	waveCapture.Egde == SET)
+	waveCapture.usUpdateCnt ++;
+	//
 	TIM_ClearITPendingBit(TIM4,TIM_FLAG_Update);
 }
 
 
-if(TIM_GetITStatus(TIM4,TIM_IT_CC1)!=RESET)
+                 //捕获比较
+  if(TIM_GetITStatus(TIM4,TIM_IT_CC1)!=RESET)
 {
 	//用户代码
+	
+	if(waveCapture.Egde == RESET)  //第一次捕获
+	{
+	
+	waveCapture.usCaptureRisingVal=0;//输入捕获值
+	waveCapture.usUpdateCnt  =0;//计数溢出标记
+	waveCapture.Egde = SET;
+		//清零
+	TIM_SetCounter(TIM4,0);
+	}
+ else 
+ {
+  waveCapture.usCaptureRisingVal=TIM_GetCapture1(TIM4);
+	 //频率
+	waveCapture.ulFrequency = 1000000/(waveCapture.usUpdateCnt * 65536 +waveCapture.usCaptureRisingVal);
+	waveCapture.usCaptureRisingVal=0;//输入捕获值
+	waveCapture.usUpdateCnt  =0;//计数溢出标记
+	waveCapture.Egde = RESET;
+	 //结束标志
+	waveCapture.ucFinishFlag =1;
+ }
+
 	TIM_ClearITPendingBit(TIM4,TIM_IT_CC1);
 }
-	  //TIM_ClearITPendingBit(TIM4,TIM_IT_CC1|TIM_IT_Update);
+	 
 }
-
+	TIM_ClearITPendingBit(TIM4,TIM_IT_CC1|TIM_IT_Update);
+}
 

@@ -14,6 +14,20 @@ void Time3Init(void);  //配置为输出比较模式，产生两个通道的pwm波
 
 
 //------------------
+
+typedef struct 
+{
+  FlagStatus Egde;//Egde = SET 表示当前处于高电平
+	uint8 ucFinishFlag;//捕获结束标记
+	uint16 usCaptureRisingVal;//输入捕获值
+	uint16 usUpdateCnt;//计数溢出标记
+	uint32 ulFrequency;//输入波形频率
+	
+}WaveCapture;
+
+
+extern WaveCapture waveCapture ;
+
 #define GENERAL_TIM4_Period   0xffff
 #define GENERAL_TIM4_Prescaler 72
 void Time4Init(void);  //配置为输入捕获模式，产生一个通道的pwm波
