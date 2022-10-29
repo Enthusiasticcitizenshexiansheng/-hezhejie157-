@@ -13,7 +13,7 @@ void Tim2Init(int prescaler,int period);
 void Time3Init(void);  //配置为输出比较模式，产生两个通道的pwm波
 
 
-//------------------
+//定时器4----------------
 
 typedef struct 
 {
@@ -31,5 +31,13 @@ extern WaveCapture waveCapture ;
 #define GENERAL_TIM4_Period   0xffff
 #define GENERAL_TIM4_Prescaler 72
 void Time4Init(void);  //配置为输入捕获模式，产生一个通道的pwm波
+
+
+
+//定1---------------------------
+#define Advance_TIM1_Period   (72000000/10000)  //不超65535
+#define Advance_TIM1_Prescaler 1
+void Tim1Init(void);
+
 #endif
 

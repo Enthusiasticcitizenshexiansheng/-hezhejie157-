@@ -301,3 +301,97 @@ void TIM4_IRQHandler(void)
 	TIM_ClearITPendingBit(TIM4,TIM_IT_CC1|TIM_IT_Update);
 }
 
+
+
+//定1------------------------
+
+ void   Tim1GpioInit(void);
+ void 	Tim1ModeInit(void);
+
+void Tim1Init(void)
+{
+  Tim1GpioInit();
+	Tim1ModeInit();
+}
+
+
+ void   Tim1GpioInit(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE|RCC_APB2Periph_AFIO,ENABLE);
+	GPIO_PinRemapConfig(GPIO_FullRemap_TIM1,ENABLE);	 
+		 
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11;//TX
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOE, &GPIO_InitStructure);
+  
+	GPIO_ResetBits(GPIOE, GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11);
+
+}
+
+
+ void 	Tim1ModeInit(void)
+ {
+	 TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+   TIM_OCInitTypeDef  TIM_OCInitStructure;
+	 
+	 
+	 //开时钟
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1,ENABLE);
+   /* TIM1 Peripheral Configuration ----------------------------------------*/
+  /* Time Base configuration */
+  TIM_TimeBaseStructure.TIM_Prescaler =(uint16)( Advance_TIM1_Prescaler-1);
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseStructure.TIM_Period = (uint16)(Advance_TIM1_Period-1);
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+
+  TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
+
+  /* Channel 1 Configuration in PWM mode */
+  TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+  TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
+  TIM_OCInitStructure.TIM_Pulse = Advance_TIM1_Period*0.3;
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
+
+  TIM_OC1Init(TIM1, &TIM_OCInitStructure);//ccr
+	TIM_OC2Init(TIM1, &TIM_OCInitStructure);
+  
+	TIM_BDTRInitTypeDef TIM_BDTRInitStructure;
+/* Automatic Output enable, Break, dead time and lock configuration*/
+  TIM_BDTRInitStructure.TIM_OSSRState = TIM_OSSRState_Enable;
+  TIM_BDTRInitStructure.TIM_OSSIState = TIM_OSSIState_Enable;
+  TIM_BDTRInitStructure.TIM_LOCKLevel = TIM_LOCKLevel_1;
+  TIM_BDTRInitStructure.TIM_DeadTime = 72;  //1/72m  *10个单位时间
+  TIM_BDTRInitStructure.TIM_Break = TIM_Break_Disable;
+  TIM_BDTRInitStructure.TIM_BreakPolarity = TIM_BreakPolarity_High;
+  TIM_BDTRInitStructure.TIM_AutomaticOutput = TIM_AutomaticOutput_Disable;
+
+  TIM_BDTRConfig(TIM1, &TIM_BDTRInitStructure);
+
+
+
+
+
+
+   TIM_OC1PreloadConfig( TIM1, TIM_OCPreload_Enable);
+   TIM_OC2PreloadConfig( TIM1, TIM_OCPreload_Enable);
+  
+	TIM_ARRPreloadConfig(TIM1,ENABLE);  //arr值更改要等一个周期
+  TIM_Cmd(TIM1, ENABLE);
+
+  TIM_CtrlPWMOutputs(TIM1, ENABLE);
+ 
+ }
+
+
+
+
+
