@@ -1,23 +1,5 @@
 #include "Timer.h"
 
-#if SPWM_EN ==1
-static uint8 bIPostiveHalf = 0;
-static uint16 SineTablePos =0;
-static uint16 DutyCycleSineWaveTable[SamplesPerHalfCycle] =
-{
-0x0000,0x0064,0x00C8,0x012D,0x0191,0x01F5,0x0259,0x02BC,0x031F,0x0381,0x03E3,0x0444,0x04A5,0x0504,0x0563,0x05C2,
-0x061F,0x067B,0x06D7,0x0731,0x078A,0x07E2,0x0839,0x088F,0x08E3,0x0936,0x0987,0x09D7,0x0A26,0x0A73,0x0ABE,0x0B08,
-0x0B50,0x0B96,0x0BDA,0x0C1D,0x0C5E,0x0C9D,0x0CD9,0x0D14,0x0D4D,0x0D84,0x0DB9,0x0DEB,0x0E1C,0x0E4A,0x0E76,0x0EA0,
-0x0EC8,0x0EED,0x0F10,0x0F31,0x0F4F,0x0F6B,0x0F85,0x0F9C,0x0FB1,0x0FC3,0x0FD3,0x0FE1,0x0FEC,0x0FF4,0x0FFB,0x0FFE,
-0x1000,0x0FFE,0x0FFB,0x0FF4,0x0FEC,0x0FE1,0x0FD3,0x0FC3,0x0FB1,0x0F9C,0x0F85,0x0F6B,0x0F4F,0x0F31,0x0F10,0x0EED,
-0x0EC8,0x0EA0,0x0E76,0x0E4A,0x0E1C,0x0DEB,0x0DB9,0x0D84,0x0D4D,0x0D14,0x0CD9,0x0C9D,0x0C5E,0x0C1D,0x0BDA,0x0B96,
-0x0B50,0x0B08,0x0ABE,0x0A73,0x0A26,0x09D7,0x0987,0x0936,0x08E3,0x088F,0x0839,0x07E2,0x078A,0x0731,0x06D7,0x067B,
-0x061F,0x05C2,0x0563,0x0504,0x04A5,0x0444,0x03E3,0x0381,0x031F,0x02BC,0x0259,0x01F5,0x0191,0x012D,0x00C8,0x0064
-
-};
-
-#endif
-
 
  void Tim2ModeInit(int prescaler,int period)
  {
@@ -68,37 +50,9 @@ void TIM2_IRQHandler(void)
 {
 if(TIM_GetITStatus(TIM2,TIM_IT_Update)!=RESET)
 {
-#if SPWM_EN ==1
-	  if(bIPostiveHalf == 0)
-		{
-		  TIM_SetCompare1(TIM1,((DutyCycleSineWaveTable[SineTablePos]/SamplesAmplitude)*Tim1Period)/MaxDutyCycle);
-      TIM_SetCompare2(TIM1,0);
-			SineTablePos++;
-			if(SineTablePos==128)
-			{
-			SineTablePos = 0 ;
-			bIPostiveHalf = 1;
-			}
-			
-		}
-		else
-		{
-	  TIM_SetCompare1(TIM1,0);
-      TIM_SetCompare2(TIM1,((DutyCycleSineWaveTable[SineTablePos]/4096.0)*Tim1Period)/2.0);
-			SineTablePos++;
-			if(SineTablePos==128)
-			{
-			SineTablePos = 0 ;
-			bIPostiveHalf = 0;
-			}
-		
-		}
-		
-	#else
+
 	UsartSendString(USART2,"TIMER2 update Interrupt occur!\n");
-	#endif
 	//用户代码
-	
 	TIM_ClearITPendingBit(TIM2,TIM_FLAG_Update);
 }
 
@@ -387,19 +341,12 @@ void Tim1Init(void)
 	 
 	 //开时钟
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1,ENABLE);
- 	 TIM_DeInit(TIM1); 
-	 /* TIM1 Peripheral Configuration ----------------------------------------*/
+   /* TIM1 Peripheral Configuration ----------------------------------------*/
   /* Time Base configuration */
-#if  SPWM_EN ==1
-  TIM_TimeBaseStructure.TIM_Prescaler =(uint16)(Tim1Prescaler-1);
-  TIM_TimeBaseStructure.TIM_Period = (uint16)(Tim1Period-1);
-#else
-	 TIM_TimeBaseStructure.TIM_Prescaler =(uint16)( Advance_TIM1_Prescaler-1);
+  TIM_TimeBaseStructure.TIM_Prescaler =(uint16)( Advance_TIM1_Prescaler-1);
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_TimeBaseStructure.TIM_Period = (uint16)(Advance_TIM1_Period-1);
-	 
-#endif
-	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; 
-	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
 
   TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
@@ -438,27 +385,13 @@ void Tim1Init(void)
    TIM_OC2PreloadConfig( TIM1, TIM_OCPreload_Enable);
   
 	TIM_ARRPreloadConfig(TIM1,ENABLE);  //arr值更改要等一个周期
-  
   TIM_Cmd(TIM1, ENABLE);
-  TIM_CtrlPWMOutputs(TIM1, ENABLE);
 
+  TIM_CtrlPWMOutputs(TIM1, ENABLE);
+ 
  }
 
 
 
 
- //spwm----------------------------------------------------------
-
-#if SPWM_EN ==1
-
-
-   void SpwmInit(void)
-	 {
-	   Tim2Init(Tim2Prescaler,Tim2Period);
-		 Tim1Init();
-	 }
-#endif
- 
- 
- 
 
